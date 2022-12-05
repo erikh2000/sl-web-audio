@@ -73,3 +73,8 @@ export function toJs(fromAudioBuffer:AudioBuffer) {
     `export default getAudioBuffer;`;
   return concat;
 }
+
+export async function blobToAudioBuffer(audioContext:AudioContext, blob:Blob):Promise<AudioBuffer> {
+  const arrayBuffer = await blob.arrayBuffer();
+  return await audioContext.decodeAudioData(arrayBuffer);
+}
