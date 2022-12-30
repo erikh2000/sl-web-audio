@@ -14,7 +14,7 @@ Why would you want to use this library?
 
 ### Contributing
 
-The project isn't open to contributions at this point. But that could change. Contact me if you'd like to collaborate. 
+The project isn't open to contributions at this point. But that could change. Contact me if you'd like to collaborate.
 
 ### Contacting
 
