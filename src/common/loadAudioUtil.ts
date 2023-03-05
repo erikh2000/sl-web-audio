@@ -1,17 +1,13 @@
-import {theAudioContext} from "./theAudioContext";
-import {blobToAudioBuffer} from "./audioBufferUtil";
+import {wavBytesToAudioBufferAndCues} from "./wavUtil";
+import WavFileData from "./WavFileData";
 
-export type WavFileData = {
-  filename:string,
-  audioBuffer:AudioBuffer
-}
-
-export async function loadWavFromUrl(url:string):Promise<AudioBuffer> {
+export async function loadWavFromUrl(url:string):Promise<WavFileData> {
   const response = await fetch(url);
   const blob = await response.blob()
   const arrayBuffer = await blob.arrayBuffer();
-  const ac = theAudioContext() as AudioContext;
-  return await ac.decodeAudioData(arrayBuffer);
+  const bytes = new Uint8Array(arrayBuffer);
+  const [audioBuffer, cues] = wavBytesToAudioBufferAndCues(bytes);
+  return {filename:url, audioBuffer, cues};
 }
 
 async function _selectWavFileHandles(multiple:boolean):Promise<FileSystemFileHandle[]|null> {
@@ -31,26 +27,23 @@ async function _selectWavFileHandles(multiple:boolean):Promise<FileSystemFileHan
   }
 }
 
-async function _readWavDataFromFileHandle(fileHandle:FileSystemFileHandle, audioContext:AudioContext):Promise<WavFileData> {
+async function _readWavDataFromFileHandle(fileHandle:FileSystemFileHandle):Promise<WavFileData> {
   const filename = fileHandle.name;
   const blob = await fileHandle.getFile();
-  const audioBuffer = await blobToAudioBuffer(audioContext, blob);
-  return { filename, audioBuffer };
+  const arrayBuffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  const [audioBuffer, cues] = wavBytesToAudioBufferAndCues(bytes);
+  return {filename, audioBuffer, cues};
 }
 
 export async function loadWavFromFileSystem():Promise<WavFileData|null> {
   const fileHandles:FileSystemFileHandle[]|null = await _selectWavFileHandles(false);
   if (!fileHandles) return null;
-  const audioContext = theAudioContext();
-  if (!audioContext) return null;
-  return _readWavDataFromFileHandle(fileHandles[0], audioContext);
+  return _readWavDataFromFileHandle(fileHandles[0]);
 }
 
 export async function loadWavsFromFileSystem():Promise<WavFileData[]|null> {
   const fileHandles:FileSystemFileHandle[]|null = await _selectWavFileHandles(true);
   if (!fileHandles) return null;
-  const audioContext = theAudioContext();
-  if (!audioContext) return null;
-
-  return Promise.all(fileHandles.map(fileHandle => _readWavDataFromFileHandle(fileHandle, audioContext)));
+  return Promise.all(fileHandles.map(fileHandle => _readWavDataFromFileHandle(fileHandle)));
 }
