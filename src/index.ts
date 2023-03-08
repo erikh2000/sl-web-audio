@@ -1,5 +1,6 @@
 export type { default as WavCue } from './common/WavCue';
 export type { default as WavFileData } from './common/WavFileData';
+export { default as Microphone } from './recording/Microphone';
 
 export * from './common/audioBufferUtil';
 export * from './common/loadAudioUtil';
