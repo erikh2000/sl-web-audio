@@ -8,6 +8,7 @@ export * from './common/playAudioUtil';
 export * from './common/theAudioContext';
 export * from './common/wavUtil';
 export * from './processing/rmsUtil';
+export * from './processing/peakUtil';
 export * from './processing/sampleUtil';
 
 /* This file only imports and re-exports top-level APIs and has been excluded from Jest 
