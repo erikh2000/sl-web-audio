@@ -24,6 +24,14 @@ function _setWaveToExpectedSampleRate(waveFile:WaveFile) {
   waveFile.toSampleRate(WISP_SAMPLE_RATE);
 }
 
+export function samplesToWavBytes(samples:Float32Array, sampleRate:number):Uint8Array {
+  const wav = new WaveFile();
+  wav.fromScratch(1, sampleRate, WISP_BIT_DEPTH_CODE, samples);
+  _setWaveToExpectedSampleRate(wav);
+  wav.setTag('ISFT', WISP_ISFT_TAG);
+  return wav.toBuffer();
+}
+
 export function audioBufferAndCuesToWavBytes(audioBuffer:AudioBuffer, cues:WavCue[]):Uint8Array {
   const wav = new WaveFile();
   wav.fromScratch(1, audioBuffer.sampleRate, WISP_BIT_DEPTH_CODE, audioBuffer.getChannelData(0));
