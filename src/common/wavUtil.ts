@@ -9,14 +9,22 @@ export const WISP_ISFT_TAG = 'WISP WAV 1.0';
 // WISP speech audio is 16-bit, 44.1 kHz, mono.
 const WISP_SAMPLE_RATE = 44100;
 const WISP_BIT_DEPTH_CODE = '16';
+const MAX_32_BIT_LINEAR_PCM = 32767;
 
 function _samples64To32BitLinearPcm(float64Array:Float64Array):Float32Array {
-  const MAX_32_BIT_LINEAR_PCM = 32767;
   const float32Array = new Float32Array(float64Array.length);
   for (let i = 0; i < float64Array.length; i++) {
     float32Array[i] = float64Array[i] / MAX_32_BIT_LINEAR_PCM;
   }
   return float32Array;
+}
+
+function _samples32To64BitLinearPcm(float32Array:Float32Array):Float64Array {
+  const float64Array = new Float64Array(float32Array.length);
+  for (let i = 0; i < float32Array.length; i++) {
+    float64Array[i] = float32Array[i] * MAX_32_BIT_LINEAR_PCM;
+  }
+  return float64Array;
 }
 
 function _setWaveToExpectedSampleRate(waveFile:WaveFile) {
@@ -26,16 +34,16 @@ function _setWaveToExpectedSampleRate(waveFile:WaveFile) {
 
 export function samplesToWavBytes(samples:Float32Array, sampleRate:number):Uint8Array {
   const wav = new WaveFile();
-  wav.fromScratch(1, sampleRate, WISP_BIT_DEPTH_CODE, samples);
-  _setWaveToExpectedSampleRate(wav);
+  const samples64 = _samples32To64BitLinearPcm(samples);
+  wav.fromScratch(1, sampleRate, WISP_BIT_DEPTH_CODE, samples64);
   wav.setTag('ISFT', WISP_ISFT_TAG);
   return wav.toBuffer();
 }
 
 export function audioBufferAndCuesToWavBytes(audioBuffer:AudioBuffer, cues:WavCue[]):Uint8Array {
   const wav = new WaveFile();
-  wav.fromScratch(1, audioBuffer.sampleRate, WISP_BIT_DEPTH_CODE, audioBuffer.getChannelData(0));
-  _setWaveToExpectedSampleRate(wav);
+  const samples64 = _samples32To64BitLinearPcm(audioBuffer.getChannelData(0));
+  wav.fromScratch(1, audioBuffer.sampleRate, WISP_BIT_DEPTH_CODE, samples64);
   wav.setTag('ISFT', WISP_ISFT_TAG);
   cues.forEach(cue => wav.setCuePoint({label:cue.label, position:cue.position}));
   return wav.toBuffer();
