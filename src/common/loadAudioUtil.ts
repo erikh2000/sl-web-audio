@@ -6,7 +6,7 @@ export async function loadWavFromUrl(url:string):Promise<WavFileData> {
   const blob = await response.blob()
   const arrayBuffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
-  const [audioBuffer, cues] = wavBytesToAudioBufferAndCues(bytes);
+  const [audioBuffer, cues] = await wavBytesToAudioBufferAndCues(bytes);
   return {filename:url, audioBuffer, cues};
 }
 
@@ -32,7 +32,7 @@ async function _readWavDataFromFileHandle(fileHandle:FileSystemFileHandle):Promi
   const blob = await fileHandle.getFile();
   const arrayBuffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
-  const [audioBuffer, cues] = wavBytesToAudioBufferAndCues(bytes);
+  const [audioBuffer, cues] = await wavBytesToAudioBufferAndCues(bytes);
   return {filename, audioBuffer, cues};
 }
 

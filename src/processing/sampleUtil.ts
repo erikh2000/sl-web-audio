@@ -31,3 +31,30 @@ export function characterizeSamples(samples:Float32Array):SampleCharacteristics 
   averageValue /= sampleCount;
   return {minValue, maxValue, averageValue, zeroCount, sampleCount};
 }
+
+export function resample(samples:Float32Array, fromSampleRate:number, toSampleRate:number):Float32Array {
+  const resampledSamples = new Float32Array(Math.round(samples.length * toSampleRate / fromSampleRate));
+  for (let i = 0; i < resampledSamples.length; ++i) {
+    const fromSampleI = i * fromSampleRate / toSampleRate;
+    const leftValue = samples[Math.floor(fromSampleI)];
+    const rightValue = samples[Math.ceil(fromSampleI)];
+    const leftWeight = fromSampleI - Math.floor(fromSampleI);
+    const rightWeight = 1 - leftWeight;
+    resampledSamples[i] = leftValue * leftWeight + rightValue * rightWeight;
+  }
+  return resampledSamples;
+}
+
+export function combineChannelSamples(samplesByChannel:Float32Array[]):Float32Array {
+  const channelCount = samplesByChannel.length;
+  const sampleCount = samplesByChannel[0].length;
+  const combinedSamples = new Float32Array(sampleCount);
+  for (let sampleI = 0; sampleI < sampleCount; ++sampleI) {
+    let sampleSum = 0;
+    for (let channelI = 0; channelI < channelCount; ++channelI) {
+      sampleSum += samplesByChannel[channelI][sampleI];
+    }
+    combinedSamples[sampleI] = sampleSum / channelCount;
+  }
+  return combinedSamples;
+}
