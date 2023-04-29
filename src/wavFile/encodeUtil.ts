@@ -1,5 +1,10 @@
 import { encodeRiffWaveHeader, textToNullTerminatedAscii } from "./riffUtil";
-import {WISP_BIT_DEPTH, WISP_BYTES_PER_SAMPLE, WISP_CHANNEL_COUNT, WISP_SAMPLE_RATE} from "./wispFormatConstants";
+import {
+  WISP_BIT_DEPTH,
+  WISP_BYTES_PER_SAMPLE,
+  WISP_CHANNEL_COUNT,
+  WISP_SAMPLE_RATE
+} from "./wispFormatConstants";
 import WavCue from "./WavCue";
 import {
   timeToSampleCount,
@@ -38,9 +43,6 @@ import {
    they are out there, and I'd like WISP wav files to be readable by them. Shame on you, Audacity, iTunes, and probably others. 
 */
 
-// Version# of format used for creating WAV files with WISP-related meta-data. Update version# when 
-// meta-data format changes. This version# is not coupled to any other version# in WISP.
-
 const WAVE_FORMAT_PCM = 1;
 
 function _encodeFmtChunk():Uint8Array {
@@ -67,6 +69,18 @@ function _encodeDataChunk(samples:Float32Array):Uint8Array {
   view.setUint32(0, 0x64617461, false); // "data"
   view.setUint32(4, samples.length * WISP_BYTES_PER_SAMPLE, true); // Chunk size, excluding this header.
   chunk.set(pcmData, 8);
+
+  return chunk;
+}
+
+function _encodeInfoChunk(isftValue:string) {
+  const chunk = new Uint8Array(8 + 4 + isftValue.length + 1);
+  const view = new DataView(chunk.buffer);
+
+  view.setUint32(0, 0x696e666f, false); // "info"
+  view.setUint32(4, 4 + isftValue.length + 1, true); // Chunk size, excluding this header.
+  view.setUint32(8, 0x49534654, false); // "ISFT"
+  chunk.set(textToNullTerminatedAscii(isftValue), 12);
 
   return chunk;
 }
@@ -139,10 +153,11 @@ function _encodeAdtlChunk(cues:WavCue[]):Uint8Array {
 
 function _normalizedSamplesAndCuePointsToWavBytes(samples:Float32Array, cues:WavCue[]):Uint8Array {
   const fmtChunk = _encodeFmtChunk();
+  const dataChunk = _encodeDataChunk(samples);
   const cueChunk = _encodeCueChunk(cues);
   const adtlChunk = _encodeAdtlChunk(cues);
-  const dataChunk = _encodeDataChunk(samples);
-  const header = encodeRiffWaveHeader(fmtChunk.length + cueChunk.length + adtlChunk.length + dataChunk.length + 4);
+  const combinedChunkSize = fmtChunk.length + dataChunk.length + cueChunk.length + adtlChunk.length;
+  const header = encodeRiffWaveHeader(combinedChunkSize +  + 4);
 
   let writePos = 0;
   const _writeChunk = (chunk:Uint8Array) => {
@@ -151,7 +166,7 @@ function _normalizedSamplesAndCuePointsToWavBytes(samples:Float32Array, cues:Wav
     writePos += chunk.length;
   }
 
-  const fileSize = header.length + fmtChunk.length + cueChunk.length + adtlChunk.length + dataChunk.length;
+  const fileSize = header.length + combinedChunkSize;
   const wavBytes = new Uint8Array(fileSize);
   _writeChunk(header);
   _writeChunk(fmtChunk);

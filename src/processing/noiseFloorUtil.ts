@@ -45,11 +45,11 @@ function _createRmsSegments(segmentCount:number, maxValue:number) {
   return segments;
 }
 
-export function findSegmentContainingRms(segments:IRmsSegment[], rms:number):number {
-  for(let segmentI = 0; segmentI < segments.length; ++segmentI) {
+function _findSegmentContainingRms(segments:IRmsSegment[], rms:number):number {
+  for(let segmentI = 0; segmentI < segments.length - 1; ++segmentI) {
     if (rms < segments[segmentI].toValue) return segmentI;
   }
-  return -1;
+  return segments.length - 1;
 }
 
 function _findMostFrequentSegment(chunks:number[], segments:IRmsSegment[]):number {
@@ -57,7 +57,7 @@ function _findMostFrequentSegment(chunks:number[], segments:IRmsSegment[]):numbe
   let mostFrequentSegmentI = -1;
   const maxSegmentI = segments.length - 1;
   for(let chunkI = 0; chunkI < chunks.length; ++chunkI) {
-    const segmentI = findSegmentContainingRms(segments, chunks[chunkI]);
+    const segmentI = _findSegmentContainingRms(segments, chunks[chunkI]);
     if (segmentI === maxSegmentI) continue; // Avoid interpreting flat lines of amplitude clipping as a noise floor.
     const foundCount = ++(segments[segmentI].foundCount);
     if (foundCount < mostFrequentSegmentChunkCount ||
@@ -70,7 +70,7 @@ function _findMostFrequentSegment(chunks:number[], segments:IRmsSegment[]):numbe
 }
 
 function _calcOtherSegmentsFoundCountAverage(segments:IRmsSegment[], excludeSegmentOneI:number, excludeSegmentTwoI:number) {
-  if (segments.length < 3) return 0; // No segments to average if 2 will be excluded.
+  if (segments.length < 3) throw Error('Expected at least 3 segments.');
   let sum = 0;
   for(let segmentI = 0; segmentI < segments.length; ++segmentI) {
     if (segmentI === excludeSegmentOneI || segmentI === excludeSegmentTwoI) continue;
@@ -94,6 +94,7 @@ function _interpolateNoiseFloorRmsFromSegmentAnalysis(segments:IRmsSegment[], mo
 }
 
 export function findNoiseFloor(samples:Float32Array, sampleRate:number, options:IFindSilenceThresholdOptions = DEFAULT_NOISE_FLOOR_OPTIONS):INoiseFloorData {
+  if (!samples.length) throw new Error('No samples provided.');
   const chunks = calcRmsChunksFromSamples(samples, sampleRate, options.chunkDuration);
   const maxRms = _findMax(chunks);
   const rmsSegments = _createRmsSegments(options.rmsSegmentCount, maxRms);

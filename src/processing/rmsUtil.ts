@@ -35,7 +35,7 @@ export function calcRmsForSamplesInRange(samples:Float32Array, startPos:number, 
 }
 
 export function combineRmsPair(firstRms:number, firstSampleCount:number, secondRms:number, secondSampleCount:number):number {
-  return (firstRms * firstSampleCount + secondRms + secondSampleCount) / (firstSampleCount + secondSampleCount);
+  return (firstRms * firstSampleCount + secondRms * secondSampleCount) / (firstSampleCount + secondSampleCount);
 }
 
 /* The fudge factor below is based on calculating actual peak average over multiple sets of samples and finding the 

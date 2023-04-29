@@ -22,6 +22,9 @@ function _parseCues(wavBytes:Uint8Array, sampleRate:number):WavCue[] {
 export async function wavBytesToAudioBuffer(wavBytes:Uint8Array):Promise<AudioBuffer> {
   const ac = theAudioContext() as AudioContext;
   if (!ac) throw new Error('AudioContext not available');
+  /* I could parse the bytes myself rather than using the browser's decodeAudioData(). But I have more confidence in 
+     the browser implementation to handle edge cases like WAV encodings that are off-spec. And I expect the 
+     native implementation of decodeAudioData() will be faster in most, if not all, cases. */
   return await ac.decodeAudioData(wavBytes.buffer);
 }
 

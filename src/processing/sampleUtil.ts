@@ -11,8 +11,6 @@ export const mSecsToSampleCount = (mSecs:number, sampleRate:number) => Math.roun
 
 export const samplesToJs = (samples:Float32Array) => 'export const samples = [' + samples.join(',') + '];\n';
 
-export const samplesToJsClipboard = (samples:Float32Array) => navigator.clipboard.writeText(samplesToJs(samples));
-
 export type SampleCharacteristics = {
   minValue: number,
   maxValue: number,
@@ -36,11 +34,16 @@ export function characterizeSamples(samples:Float32Array):SampleCharacteristics 
 }
 
 export function resample(samples:Float32Array, fromSampleRate:number, toSampleRate:number):Float32Array {
-  const resampledSamples = new Float32Array(Math.round(samples.length * toSampleRate / fromSampleRate));
+  if (fromSampleRate === toSampleRate) return new Float32Array(samples)
+  const resampleRatio = toSampleRate / fromSampleRate;
+  const fromRatio = fromSampleRate / toSampleRate; 
+  const resampledSamples = new Float32Array(Math.ceil(samples.length * resampleRatio));
   for (let i = 0; i < resampledSamples.length; ++i) {
-    const fromSampleI = i * fromSampleRate / toSampleRate;
+    const fromSampleI = i * fromRatio;
     const leftValue = samples[Math.floor(fromSampleI)];
-    const rightValue = samples[Math.ceil(fromSampleI)];
+    let rightValueI = Math.ceil(fromSampleI);
+    if (rightValueI >= samples.length) rightValueI = samples.length - 1;
+    const rightValue = samples[rightValueI];
     const leftWeight = fromSampleI - Math.floor(fromSampleI);
     const rightWeight = 1 - leftWeight;
     resampledSamples[i] = leftValue * leftWeight + rightValue * rightWeight;
