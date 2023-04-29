@@ -1,3 +1,6 @@
+
+const PCM_BYTES_PER_SAMPLE = 2;
+const MAX_16BIT_PCM_VALUE = 32767;
 export const sampleCountToTime = (sampleCount:number, sampleRate:number) => sampleCount / sampleRate;
 
 export const timeToSampleCount = (time:number, sampleRate:number) => time * sampleRate;
@@ -57,4 +60,17 @@ export function combineChannelSamples(samplesByChannel:Float32Array[]):Float32Ar
     combinedSamples[sampleI] = sampleSum / channelCount;
   }
   return combinedSamples;
+}
+
+// Encode an array of 32-bit float samples as 16-bit PCM (signed 16-bit int) data.
+export function samplesToPcmData(samples:Float32Array):Uint8Array {
+  const sampleCount = samples.length;
+  const pcmData = new Uint8Array(sampleCount * PCM_BYTES_PER_SAMPLE);
+  const view = new DataView(pcmData.buffer);
+  for (let i = 0; i < sampleCount; ++i) {
+    const sample = samples[i];
+    const sampleValue = Math.round(sample * MAX_16BIT_PCM_VALUE);
+    view.setInt16(i * PCM_BYTES_PER_SAMPLE, sampleValue, true);
+  }
+  return pcmData;
 }

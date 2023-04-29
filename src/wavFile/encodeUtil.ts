@@ -1,6 +1,12 @@
+import { encodeRiffWaveHeader, textToNullTerminatedAscii } from "./riffUtil";
+import {WISP_BIT_DEPTH, WISP_BYTES_PER_SAMPLE, WISP_CHANNEL_COUNT, WISP_SAMPLE_RATE} from "./wispFormatConstants";
 import WavCue from "./WavCue";
-import { theAudioContext } from "./theAudioContext";
-import {timeToSampleCount, sampleCountToTime, combineChannelSamples, resample} from '../processing/sampleUtil';
+import {
+  timeToSampleCount,
+  combineChannelSamples,
+  resample,
+  samplesToPcmData
+} from '../processing/sampleUtil';
 
 /* When WISP writes WAV files, it uses 16-bit, 44.1 kHz, mono, and adds cue points for visemes used in lip animation.
    When WISP reads WAV files, it parses any valid WAV file, and will attempt to load cue points for visemes without
@@ -34,112 +40,8 @@ import {timeToSampleCount, sampleCountToTime, combineChannelSamples, resample} f
 
 // Version# of format used for creating WAV files with WISP-related meta-data. Update version# when 
 // meta-data format changes. This version# is not coupled to any other version# in WISP.
-export const WISP_ISFT_TAG = 'WISP WAV 1.0';
-
-const WISP_SAMPLE_RATE = 44100;
-const WISP_BIT_DEPTH = 16;
-const WISP_BYTES_PER_SAMPLE = WISP_BIT_DEPTH / 8;
-const WISP_CHANNEL_COUNT = 1;
-const MAX_16BIT_PCM_VALUE = 32767;
 
 const WAVE_FORMAT_PCM = 1;
-const CHUNK_SIZE_OFFSET = 4;
-const CHUNK_DATA_OFFSET = 8;
-
-function _readUint32(bytes:Uint8Array, offset:number):number {
-  return bytes[offset] + (bytes[offset + 1] << 8) + (bytes[offset + 2] << 16) + (bytes[offset + 3] << 24);
-}
-
-function _readNullTerminatedAscii(bytes:Uint8Array, offset:number, maxLength:number):string {
-  let text = '';
-  for (let i = 0; i < maxLength; ++i) {
-    const byte = bytes[offset+i];
-    if (byte === 0) break;
-    text += String.fromCharCode(byte);
-  }
-  return text;
-}
-
-// Find first chunk inside RIFF matching chunkId and return chunk data bytes for it or null if not found.
-function _findWavChunk(wavBytes:Uint8Array, chunkId:string):Uint8Array|null {
-  const chunkIdBytes = new TextEncoder().encode(chunkId);
-  const wavBytesLen = wavBytes.length;
-
-  const _doesChunkIdMatch = () => {
-    return wavBytes[readI] === chunkIdBytes[0] && wavBytes[readI + 1] === chunkIdBytes[1] &&
-      wavBytes[readI + 2] === chunkIdBytes[2] && wavBytes[readI + 3] === chunkIdBytes[3];
-  }
-
-  const _copyChunkData = (chunkDataSize:number):Uint8Array => {
-    return wavBytes.subarray(readI + CHUNK_DATA_OFFSET, readI + CHUNK_DATA_OFFSET + chunkDataSize);
-  }
-
-  let readI = 12; // Skip to position in data after RIFF header.
-  while (readI < wavBytesLen) {
-    const chunkDataSize = _readUint32(wavBytes, readI + CHUNK_SIZE_OFFSET)
-    if (_doesChunkIdMatch()) return _copyChunkData(chunkDataSize);
-    readI += CHUNK_DATA_OFFSET + chunkDataSize;
-  }
-  return null;
-}
-
-function _parseCuesFromCueChunkData(cueChunkData:Uint8Array, sampleRate:number):WavCue[] {
-  const CUE_POINT_OFFSET = 4;
-  const CUE_POINT_DATA_SIZE = 24;
-  const SAMPLE_OFFSET = 20;
-  const cueCount = _readUint32(cueChunkData, 0);
-  const cues:WavCue[] = [];
-  for (let cueI = 0; cueI < cueCount; ++cueI) {
-    const sampleOffsetI = CUE_POINT_OFFSET + (cueI * CUE_POINT_DATA_SIZE) + SAMPLE_OFFSET;
-    const sampleOffset = _readUint32(cueChunkData, sampleOffsetI);
-    const position = sampleCountToTime(sampleOffset, sampleRate);
-    cues.push({ position, label:'' });
-  }
-  return cues;
-}
-
-function _parseLabelsFromAdtlChunkData(adtlChunkData:Uint8Array):string[] {
-  const SUB_CHUNK_HEADER_SIZE = 8;
-  const labels:string[] = [];
-  const chunkDataSize = adtlChunkData.length;
-  let readI = 4; // Skip over "adtl" chunk ID.
-  while(readI < chunkDataSize) {
-    const subChunkId = _readUint32(adtlChunkData, readI);
-    const subChunkDataSize = _readUint32(adtlChunkData, readI + 4);
-    if (subChunkId === 0x6c626c20) { // "labl"
-      const label = _readNullTerminatedAscii(adtlChunkData, readI + SUB_CHUNK_HEADER_SIZE, subChunkDataSize);
-      labels.push(label);
-    }
-    readI += SUB_CHUNK_HEADER_SIZE + subChunkDataSize;
-  }
-  return labels;
-}
-
-function _addLabelsToCues(cues:WavCue[], labels:string[]) {
-  for (let i = 0; i < cues.length && i < labels.length; ++i) {
-    cues[i].label = labels[i];
-  }
-}
-
-function _parseCues(wavBytes:Uint8Array, sampleRate:number):WavCue[] {
-  const cueChunkData = _findWavChunk(wavBytes, 'cue ');
-  if (!cueChunkData) return [];
-  const cues = _parseCuesFromCueChunkData(cueChunkData, sampleRate);
-  const adtlChunkData = _findWavChunk(wavBytes, 'list');
-  if (!adtlChunkData) return cues;
-  const labels = _parseLabelsFromAdtlChunkData(adtlChunkData);
-  _addLabelsToCues(cues, labels);
-  return cues;
-}
-
-function _encodeHeader(chunksDataSize:number):Uint8Array {
-  const header = new Uint8Array(12);
-  const view = new DataView(header.buffer);
-  view.setUint32(0, 0x52494646, false); // "RIFF" - This is actually the file header, and not part of the root chunk, but... it's fine.
-  view.setUint32(4, chunksDataSize, true); // Size of all the other chunks and this one, excluding the first 8 bytes.
-  view.setUint32(8, 0x57415645, false); // "WAVE"
-  return header;
-}
 
 function _encodeFmtChunk():Uint8Array {
   const chunk = new Uint8Array(24);
@@ -157,22 +59,8 @@ function _encodeFmtChunk():Uint8Array {
   return chunk;
 }
 
-
-// Encode an array of 32-bit float samples as 16-bit PCM (signed 16-bit int) data.
-function _encodePcmData(samples:Float32Array):Uint8Array {
-  const sampleCount = samples.length;
-  const pcmData = new Uint8Array(sampleCount * WISP_BYTES_PER_SAMPLE);
-  const view = new DataView(pcmData.buffer);
-  for (let i = 0; i < sampleCount; ++i) {
-    const sample = samples[i];
-    const sampleValue = Math.round(sample * MAX_16BIT_PCM_VALUE);
-    view.setInt16(i * WISP_BYTES_PER_SAMPLE, sampleValue, true);
-  }
-  return pcmData;
-}
-
 function _encodeDataChunk(samples:Float32Array):Uint8Array {
-  const pcmData = _encodePcmData(samples);
+  const pcmData = samplesToPcmData(samples);
   const chunk = new Uint8Array(8 + pcmData.length);
   const view = new DataView(chunk.buffer);
 
@@ -224,13 +112,6 @@ function _encodeCueChunk(cues:WavCue[]):Uint8Array {
   return chunk;
 }
 
-function _textToNullTerminatedAscii(text:string):Uint8Array {
-  const textBytes = new TextEncoder().encode(text);
-  const nullTerminatedTextBytes = new Uint8Array(textBytes.length + 1); // +1 for null terminator
-  nullTerminatedTextBytes.set(textBytes); // Default value is 0, so null terminator is already there.
-  return nullTerminatedTextBytes;
-}
-
 function _encodeAdtlChunk(cues:WavCue[]):Uint8Array {
   if (!cues.length) return new Uint8Array(0);
 
@@ -249,7 +130,7 @@ function _encodeAdtlChunk(cues:WavCue[]):Uint8Array {
     view.setUint32(writePos, 0x6c626c20, false); writePos += 4; // "labl"
     view.setUint32(writePos, 4 + cues[i].label.length + 1, true); writePos += 4; // Chunk size, excluding this header.
     view.setUint32(writePos, i+1, false); writePos += 4; // Cue point ID
-    const szLabel = _textToNullTerminatedAscii(cues[i].label)
+    const szLabel = textToNullTerminatedAscii(cues[i].label)
     chunk.set(szLabel, writePos); writePos += szLabel.length;
   }
 
@@ -261,7 +142,7 @@ function _normalizedSamplesAndCuePointsToWavBytes(samples:Float32Array, cues:Wav
   const cueChunk = _encodeCueChunk(cues);
   const adtlChunk = _encodeAdtlChunk(cues);
   const dataChunk = _encodeDataChunk(samples);
-  const header = _encodeHeader(fmtChunk.length + cueChunk.length + adtlChunk.length + dataChunk.length + 4);
+  const header = encodeRiffWaveHeader(fmtChunk.length + cueChunk.length + adtlChunk.length + dataChunk.length + 4);
 
   let writePos = 0;
   const _writeChunk = (chunk:Uint8Array) => {
@@ -294,18 +175,6 @@ export function audioBufferAndCuesToWavBytes(audioBuffer:AudioBuffer, cues:WavCu
 export function audioBufferToWavBytes(audioBuffer:AudioBuffer):Uint8Array {
   const normalizedSamples = _getNormalizedSamplesFromAudioBuffer(audioBuffer);
   return _normalizedSamplesAndCuePointsToWavBytes(normalizedSamples, [])
-}
-
-export async function wavBytesToAudioBuffer(wavBytes:Uint8Array):Promise<AudioBuffer> {
-  const ac = theAudioContext() as AudioContext;
-  if (!ac) throw new Error('AudioContext not available');
-  return await ac.decodeAudioData(wavBytes.buffer);
-}
-
-export async function wavBytesToAudioBufferAndCues(wavBytes:Uint8Array):Promise<[audioBuffer:AudioBuffer, cues:WavCue[]]> {
-  const audioBuffer = await wavBytesToAudioBuffer(wavBytes);
-  const cues = _parseCues(wavBytes, audioBuffer.sampleRate);
-  return [audioBuffer, cues];
 }
 
 export function downloadWavBytes(wavBytes:Uint8Array, filename:string) {

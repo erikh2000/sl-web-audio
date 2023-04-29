@@ -1,5 +1,5 @@
-import {wavBytesToAudioBufferAndCues} from "./wavUtil";
-import WavFileData from "./WavFileData";
+import {wavBytesToAudioBufferAndCues} from "../wavFile/decodeUtil";
+import WavFileData from "../wavFile/WavFileData";
 
 export async function loadWavFromUrl(url:string):Promise<WavFileData> {
   const response = await fetch(url);
