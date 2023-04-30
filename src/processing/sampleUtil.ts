@@ -52,6 +52,7 @@ export function resample(samples:Float32Array, fromSampleRate:number, toSampleRa
 }
 
 export function combineChannelSamples(samplesByChannel:Float32Array[]):Float32Array {
+  if (samplesByChannel.length === 1) return samplesByChannel[0];
   const channelCount = samplesByChannel.length;
   const sampleCount = samplesByChannel[0].length;
   const combinedSamples = new Float32Array(sampleCount);

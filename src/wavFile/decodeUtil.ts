@@ -1,6 +1,8 @@
 import WavCue from "./WavCue";
-import {findWavChunk, parseCuesFromCueChunkData, parseLabelsFromAdtlChunkData} from "./riffUtil";
+import {findWavChunk} from "./riffUtil";
 import {theAudioContext} from "../common/theAudioContext";
+import {parseCuesFromCueChunkData} from "./cueChunkUtil";
+import {parseLabelsFromAdtlChunkData} from "./adtlChunkUtil";
 
 function _addLabelsToCues(cues:WavCue[], labels:string[]) {
   for (let i = 0; i < cues.length && i < labels.length; ++i) {
