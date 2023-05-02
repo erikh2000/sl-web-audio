@@ -2,12 +2,12 @@ import { wavBytesToAudioBuffer, wavBytesToAudioBufferAndCues } from '../decodeUt
 import { wavBytes as withNoCuesWavBytes } from '../__testWavs__/wavWithNoCuesBytes';
 import { wavBytes as withCuesWavBytes } from '../__testWavs__/wavWithCuesBytes';
 import { wavBytes as withCuesNoAdtlWavBytes } from '../__testWavs__/wavWithCuesNoAdtlBytes';
-import * as theAudioContextModule from '../../common/theAudioContext';
-import { theAudioContextMock, theAudioContextUnavailableMock } from '../__mocks__/theAudioContextMock';
+import * as theAudioContextModule from '../../wrappers/theAudioContext';
+import { theAudioContextMock, theAudioContextUnavailableMock } from '../../__mocks__/theAudioContext';
 
 describe('decodeUtil', () => {
   beforeEach(() => {
-    jest.mock('../../common/theAudioContext');
+    jest.mock('../../wrappers/theAudioContext');
     jest.spyOn(theAudioContextModule, 'theAudioContext').mockImplementation(theAudioContextMock);
   });
   

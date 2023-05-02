@@ -1,3 +1,4 @@
+// Mock only as needed to support functions under test.
 async function _decodeAudioData(_wavBytes:ArrayBuffer):Promise<AudioBuffer> {
   const samples =  new Float32Array([0,1,2,3,4,5,6,7,8,9]);
   const fakeAudioBuffer:unknown = {
@@ -10,7 +11,9 @@ async function _decodeAudioData(_wavBytes:ArrayBuffer):Promise<AudioBuffer> {
 }
 
 export const theAudioContextMock = ():AudioContext|null => {
-  const fakeAudioContext:unknown = { decodeAudioData: _decodeAudioData };
+  const fakeAudioContext:unknown = { 
+    decodeAudioData: _decodeAudioData
+  };
   return fakeAudioContext as AudioContext;
 }
 

@@ -57,6 +57,9 @@
       "!./src/3rdParty/**",
       "!./src/index.ts"
     ],
+    "coveragePathIgnorePatterns": [
+      "./src/wrappers/"
+    ],
     "coverageThreshold": {
       "global": {
         "lines": 100

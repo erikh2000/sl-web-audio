@@ -1,6 +1,6 @@
 import WavCue from "./WavCue";
 import {findWavChunk} from "./riffUtil";
-import {theAudioContext} from "../common/theAudioContext";
+import {theAudioContext} from "../wrappers/theAudioContext";
 import {parseCuesFromCueChunkData} from "./cueChunkUtil";
 import {parseLabelsFromAdtlChunkData} from "./adtlChunkUtil";
 

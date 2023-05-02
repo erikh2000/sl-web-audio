@@ -1,4 +1,4 @@
-import {waitForTheAudioContext} from '../common/theAudioContext';
+import {waitForTheAudioContext} from './theAudioContext';
 
 // For an AudioWorklet-based version of this see the "AudioWorklet" branch. There were incompatibilities with Webpack that I'm hoping get resolved in a future release of webpack.
 // Reportedly, there is also an issue with AudioWorklet in Safari. https://stackoverflow.com/questions/73365059/audioworklet-playback-cut-in-half-on-iphone-devices-and-safari
@@ -114,6 +114,8 @@ class Microphone {
   disable() {
     this.isRecording = false;
   }
+  
+  get isEnabled():boolean { return this.isRecording; }
 }
 
 export default Microphone;

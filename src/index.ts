@@ -1,11 +1,11 @@
 export type { default as WavCue } from './wavFile/WavCue';
 export type { default as WavFileData } from './wavFile/WavFileData';
-export { default as Microphone } from './recording/Microphone';
+export { default as Microphone } from './wrappers/Microphone';
 
-export * from './common/audioBufferUtil';
-export * from './common/loadAudioUtil';
-export * from './common/playAudioUtil';
-export * from './common/theAudioContext';
+export * from './wrappers/audioBufferUtil';
+export * from './wrappers/loadAudioUtil';
+export * from './wrappers/playAudioUtil';
+export * from './wrappers/theAudioContext';
 export * from './processing/noiseFloorUtil';
 export * from './processing/peakUtil';
 export * from './processing/rmsUtil';
