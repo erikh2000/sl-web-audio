@@ -27,7 +27,8 @@ export async function wavBytesToAudioBuffer(wavBytes:Uint8Array):Promise<AudioBu
   /* I could parse the bytes myself rather than using the browser's decodeAudioData(). But I have more confidence in 
      the browser implementation to handle edge cases like WAV encodings that are off-spec. And I expect the 
      native implementation of decodeAudioData() will be faster in most, if not all, cases. */
-  return await ac.decodeAudioData(wavBytes.buffer);
+  const wavBytesCopy = new Uint8Array(wavBytes); // Pass a copy because decodeAudioData() will detach the buffer. https://github.com/WebAudio/web-audio-api/issues/1175
+  return await ac.decodeAudioData(wavBytesCopy.buffer);
 }
 
 export async function wavBytesToAudioBufferAndCues(wavBytes:Uint8Array):Promise<[audioBuffer:AudioBuffer, cues:WavCue[]]> {

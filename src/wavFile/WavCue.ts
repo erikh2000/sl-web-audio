@@ -1,6 +1,6 @@
 export type WavCue = {
   label: string,
-  position: number // msecs
+  position: number // seconds
 }
 
 export default WavCue;
