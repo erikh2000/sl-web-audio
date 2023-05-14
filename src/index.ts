@@ -6,6 +6,7 @@ export * from './wrappers/audioBufferUtil';
 export * from './wrappers/loadAudioUtil';
 export * from './wrappers/playAudioUtil';
 export * from './wrappers/theAudioContext';
+export * from './generating/silenceUtil';
 export * from './processing/noiseFloorUtil';
 export * from './processing/peakUtil';
 export * from './processing/rmsUtil';
