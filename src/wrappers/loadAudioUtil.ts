@@ -1,5 +1,6 @@
 import {wavBytesToAudioBufferAndCues} from "../wavFile/decodeUtil";
 import WavFileData from "../wavFile/WavFileData";
+import {theAudioContext} from "./theAudioContext";
 
 export async function loadWavFromUrl(url:string):Promise<WavFileData> {
   const response = await fetch(url);
@@ -8,6 +9,15 @@ export async function loadWavFromUrl(url:string):Promise<WavFileData> {
   const bytes = new Uint8Array(arrayBuffer);
   const [audioBuffer, cues] = await wavBytesToAudioBufferAndCues(bytes);
   return {filename:url, audioBuffer, cues};
+}
+
+export async function loadMp3FromUrl(url:string):Promise<AudioBuffer> {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const ac = theAudioContext() as AudioContext;
+  if (!ac) throw new Error('AudioContext not available');
+  const bytesCopy = new Uint8Array(arrayBuffer); // Pass a copy because decodeAudioData() will detach the buffer. https://github.com/WebAudio/web-audio-api/issues/1175
+  return await ac.decodeAudioData(bytesCopy.buffer);
 }
 
 async function _selectWavFileHandles(multiple:boolean):Promise<FileSystemFileHandle[]|null> {
