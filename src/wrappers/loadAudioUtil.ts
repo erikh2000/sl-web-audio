@@ -3,7 +3,7 @@ import WavFileData from "../wavFile/WavFileData";
 import {theAudioContext} from "./theAudioContext";
 
 export async function loadWavFromUrl(url:string):Promise<WavFileData> {
-  const response = await fetch(url);
+  const response = await fetch(url, { mode: 'cors' });
   const blob = await response.blob()
   const arrayBuffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
@@ -12,7 +12,7 @@ export async function loadWavFromUrl(url:string):Promise<WavFileData> {
 }
 
 export async function loadMp3FromUrl(url:string):Promise<AudioBuffer> {
-  const response = await fetch(url);
+  const response = await fetch(url, { mode: 'cors' });
   const arrayBuffer = await response.arrayBuffer();
   const ac = theAudioContext() as AudioContext;
   if (!ac) throw new Error('AudioContext not available');
