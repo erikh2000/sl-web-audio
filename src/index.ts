@@ -13,6 +13,7 @@ export * from './processing/rmsUtil';
 export * from './processing/sampleUtil';
 export * from './wavFile/encodeUtil';
 export * from './wavFile/decodeUtil';
+export * from './oggFile/encodeUtil';
 
 /* This file only imports and re-exports top-level APIs and has been excluded from Jest 
    coverage reporting in package.json. All the exports are tested via unit tests associated

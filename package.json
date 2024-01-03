@@ -1,7 +1,7 @@
 {
   "name": "sl-web-audio",
   "description": "Library for loading, playing, and processing web audio.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "Erik Hermansen",
   "license": "MIT",
   "private": false,
@@ -26,8 +26,8 @@
     "@typescript-eslint/parser": "^5.41.0",
     "eslint": "^8.26.0",
     "jest": "^29.2.2",
-    "jsdoc": "^3.6.11",
-    "jsdoc-plugin-typescript": "^2.2.0",
+    "jsdoc": "^4.0.2",
+    "jsdoc-plugin-typescript": "^2.2.1",
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
     "typescript": "^4.8.4"
@@ -72,5 +72,8 @@
     "globals": {
       "window": {}
     }
+  },
+  "dependencies": {
+    "vorbis-encoder-js": "^1.0.2"
   }
 }
