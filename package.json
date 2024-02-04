@@ -1,7 +1,7 @@
 {
   "name": "sl-web-audio",
   "description": "Library for loading, playing, and processing web audio.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "Erik Hermansen",
   "license": "MIT",
   "private": false,
@@ -74,6 +74,6 @@
     }
   },
   "dependencies": {
-    "vorbis-encoder-js": "^1.0.2"
+    "sl-web-ogg": "^1.0.5"
   }
 }
