@@ -51,71 +51,76 @@ function _getBestBufferSize():number {
   return typeof window.AudioContext === "undefined" ? 4096 : 0;
 }
 
-interface IInitResults {
+type InitResults = {
   recorder:ScriptProcessorNode,
-  sampleRate:number
+  sampleRate:number,
+  bufferSize:number
 }
 
-async function _init():Promise<IInitResults> {
+async function _init():Promise<InitResults> {
   const mediaStream = await _getMicrophoneUserMedia();
   const context = await waitForTheAudioContext();
-  const bufferSize = _getBestBufferSize();
+  const bestBufferSize = _getBestBufferSize();
 
   const inputChannels = 1; // Nearly every mic will be one channel.
   const outputChannels = 1; // Chrome is buggy and won't work without this.
 
   const recorder = context.createScriptProcessor(
-    bufferSize,
+    bestBufferSize,
     inputChannels,
     outputChannels
   );
+  const bufferSize = recorder.bufferSize;
 
   recorder.connect(context.destination);
 
   const audioInput = context.createMediaStreamSource(mediaStream);
   audioInput.connect(recorder);
 
-  return { recorder, sampleRate:context.sampleRate };
+  return { recorder, sampleRate:context.sampleRate, bufferSize };
 }
 
 class Microphone {
-  recorder:ScriptProcessorNode | null;
-  onReceiveAudio:IReceiveAudioCallback;
-  sampleRate:number;
-  isRecording:boolean;
+  _recorder:ScriptProcessorNode | null;
+  _onReceiveAudio:IReceiveAudioCallback;
+  _sampleRate:number;
+  _bufferSize:number;
+  _isRecording:boolean;
 
   constructor(onReceiveAudio:IReceiveAudioCallback) {
-    this.recorder = null;
-    this.onReceiveAudio = onReceiveAudio;
-    this.sampleRate = 0;
-    this.isRecording = false;
+    this._recorder = null;
+    this._onReceiveAudio = onReceiveAudio;
+    this._sampleRate = 0;
+    this._bufferSize = 0;
+    this._isRecording = false;
   }
 
   _onRecorderProcess = (e: AudioProcessingEvent) => { // onaudioprocess can be called at least once after we've stopped
-    if (!this.isRecording || !this.recorder) return;
+    if (!this._isRecording || !this._recorder) return;
     const samples:Float32Array = e.inputBuffer.getChannelData(0);
     if (!samples.length) return;
-    this.onReceiveAudio(samples, this.sampleRate);
+    this._onReceiveAudio(samples, this._sampleRate);
   };
 
-  init():Promise<void> {
-    const promiseAny:Promise<any> = _init().then((results:IInitResults) => {
-      this.recorder = results.recorder;
-      this.sampleRate = results.sampleRate;
-      this.recorder.onaudioprocess = this._onRecorderProcess;
-    });
-    return promiseAny as Promise<void>;
+  async init() {
+    const results = await _init();
+    this._recorder = results.recorder;
+    this._sampleRate = results.sampleRate;
+    this._recorder.onaudioprocess = this._onRecorderProcess;
+    this._bufferSize = results.bufferSize;
   }
 
   enable() {
-    this.isRecording = true;
+    this._isRecording = true;
   }
 
   disable() {
-    this.isRecording = false;
+    this._isRecording = false;
   }
   
-  get isEnabled():boolean { return this.isRecording; }
+  get bufferSize():number { return this._bufferSize; }
+  get sampleRate():number { return this._sampleRate; }
+  get isEnabled():boolean { return this._isRecording; }
 }
 
 export default Microphone;
