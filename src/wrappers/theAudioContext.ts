@@ -1,6 +1,6 @@
 let sourceId = 0;
 
-const windowAny = window as any;
+const windowAny = typeof window !== "undefined" ? (window as any) : {};
 
 // Reuse one AudioContext instance for browsers like Safari that cap how many instances can be created.
 export function theAudioContext():AudioContext | null {
